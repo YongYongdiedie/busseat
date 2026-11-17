@@ -26,7 +26,7 @@ service cloud.firestore {
       allow list, write: if false;
     }
     match /trips/{trip}/classes/{classId} {
-      allow read: if signedIn();
+      allow read: if teacher();
       function withHistory() {
         let id = request.resource.data.historyId;
         return !exists(/databases/$(database)/documents/trips/$(trip)/classes/$(classId)/history/$(id))

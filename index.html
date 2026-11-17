@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="ko">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#090f1d"><title>우리 버스 · 수학여행</title><link rel="stylesheet" href="style.css?v=20261117-3"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#090f1d"><title>우리 버스 · 수학여행</title><link rel="stylesheet" href="style.css?v=20261117-4"></head>
 <body>
 <header><a class="brand" href="#">KISH <span>수학여행</span></a><a class="back" href="https://waergyrd.github.io/school-trip/#/">여행 홈 ↗</a></header>
 <main>
@@ -10,11 +10,11 @@
 <div class="cloud-row"><label>여행<select id="tripSelect"></select></label><label>우리 반<select id="classSelect"></select></label></div>
 <p id="cloudStatus" role="status">Firebase 설정 확인 중…</p>
 <form id="loginForm"><div class="cloud-row"><label>교사 이메일<input id="teacherEmail" type="email" autocomplete="username" required></label><label>비밀번호<input id="teacherPassword" type="password" autocomplete="current-password" required></label></div><button class="button" type="submit" id="loginButton">교사 로그인</button></form>
-<div class="button-row"><span id="authStatus"></span><button id="logoutButton" class="button" hidden>로그아웃</button></div>
+<div class="button-row"><span id="authStatus" role="status" aria-live="polite">로그인 상태 확인 중…</span><button id="logoutButton" class="button" hidden>로그아웃</button></div>
 <div id="teacherTools" hidden><label for="revisionNote">저장 메모</label><input id="revisionNote" maxlength="100" placeholder="예: 1일차 출발 / 점심 후 자리 변경"><div class="button-row"><button id="publishClass" class="primary">반에 저장 · 기록 남기기</button><button id="loadLatest" class="button">최신 배치 불러오기</button><button id="showHistory" class="button">이전 기록 보기</button></div><p class="hint">편집 내용은 임시 저장됩니다. ‘반에 저장’을 누르면 학생들에게 반영됩니다.</p><ol id="historyList"></ol><button class="button" id="moreHistory" hidden>이전 기록 더 보기</button></div>
-<p class="hint">학생은 반을 선택해 저장된 좌석표를 확인할 수 있습니다.</p>
+<p class="hint" id="accessHint">좌석 배치도는 교사 로그인 및 수정 권한 확인 후 표시됩니다.</p><p id="teacherUid" class="hint" hidden></p><button id="retryAccess" class="button" hidden>권한 / 연결 다시 확인</button>
 </section>
-<div class="layout">
+<div class="layout" id="teacherWorkspace" hidden>
 <aside>
 <section class="card"><div class="section-title"><span class="step">01</span><h2>우리 버스 정보</h2></div><label for="busName">버스 이름</label><input id="busName" maxlength="40" placeholder="예: 1호차 · 1반"><label for="plate">차량 번호판</label><input id="plate" maxlength="30" placeholder="예: 서울 72바 1234"><div class="photo-box" id="photoBox"><img id="busPhoto" alt="등록한 우리 버스 사진" hidden><div id="photoEmpty"><span class="camera">▣</span><strong>버스 사진을 남겨두세요</strong><span>차량이나 번호판 사진으로 쉽게 확인해요</span></div></div><div class="button-row"><label class="button" role="button" tabindex="0" for="cameraFile">사진 촬영</label><label class="button" role="button" tabindex="0" for="photoFile">사진 선택</label><button id="removePhoto" class="text-button" hidden>삭제</button></div><input hidden id="cameraFile" type="file" accept="image/*" capture="environment"><input hidden id="photoFile" type="file" accept="image/*"><p class="hint">촬영은 지원되는 휴대폰에서 카메라를 엽니다.</p></section>
 <section class="card editor"><div class="section-title"><span class="step">02</span><h2>자리 정하기</h2></div><div class="tabs" role="group" aria-label="배치 방식"><button data-mode="random" aria-pressed="true">랜덤 배치</button><button data-mode="manual" aria-pressed="false">직접 입력</button><button data-mode="block" aria-pressed="false">좌석 제외</button></div><div id="randomPanel"><p class="instruction">학생 번호의 시작과 끝을 입력하세요.</p><div class="range"><label>시작 번호<input id="start" type="number" min="1" max="99999" value="1"></label><span>—</span><label>끝 번호<input id="end" type="number" min="1" max="99999" value="40"></label></div><p class="hint">범위 안의 모든 번호를 한 번씩 배치합니다.<br>제외 좌석을 먼저 선택하세요. 기존 번호는 교체됩니다.</p><button id="randomize" class="primary">↝ &nbsp; 랜덤으로 자리 정하기</button></div><p id="modeHelp" class="instruction" hidden></p><div class="divider"></div><div class="button-row"><button id="clear" class="button">배치 번호 지우기</button><button id="undo" class="text-button" disabled>되돌리기</button></div></section>
@@ -22,5 +22,5 @@
 </aside>
 <section class="card seating"><div class="map-heading"><div><p class="eyebrow">SEATING PLAN</p><h2 id="mapTitle">우리 버스 좌석표</h2></div><span class="pill">45인승</span></div><div class="stats"><span><b id="occupied">0</b> 배치</span><span><b id="available">45</b> 사용 가능</span><span><b id="blocked">0</b> 제외</span></div><div class="map-toolbar"><span id="mapHint">빈 좌석에 번호를 랜덤으로 배치해요</span><label class="find">내 번호 <input id="find" type="number" min="1" placeholder="번호" aria-label="내 번호 찾기"></label></div><p id="findResult" role="status" class="hint"></p><div class="bus"><div class="windshield"><span>FRONT · 버스 앞쪽</span></div><div class="driver-row"><span class="driver">◉ <span>운전석</span></span><span>출입문 ↗</span></div><div class="seat-grid" id="seatGrid" aria-label="45인승 버스 좌석표"></div><div class="rear">REAR · 맨 뒤 5인석</div></div><div class="legend"><span><i></i>빈 좌석</span><span><i class="filled"></i>배치 완료</span><span><i class="excluded">×</i>제외 좌석</span></div><p class="map-note">작은 숫자는 좌석 번호, 큰 숫자는 학생 번호입니다.</p></section>
 </div><footer><span>KISH · 함께 만드는 수학여행</span><span>OUR BUS, OUR JOURNEY.</span></footer>
-</main><div id="toast" role="status" aria-live="polite"></div><script src="firebase-config.js?v=20261117-3"></script><script src="core.js?v=20261117-3"></script><script src="app.js?v=20261117-3"></script>
-<script src="image-export.js?v=20261117-3"></script><script type="module" src="cloud.js?v=20261117-3"></script></body></html>
+</main><div id="toast" role="status" aria-live="polite"></div><script src="firebase-config.js?v=20261117-4"></script><script src="core.js?v=20261117-4"></script><script src="app.js?v=20261117-4"></script>
+<script src="image-export.js?v=20261117-4"></script><script type="module" src="cloud.js?v=20261117-4"></script></body></html>
