@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function teacher() {
+      return signedIn() && exists(/databases/$(database)/documents/busEditors/$(request.auth.uid))
+        && get(/databases/$(database)/documents/busEditors/$(request.auth.uid)).data.enabled == true;
+    }
+    function validState(s) {
+      return s is map && s.keys().hasAll(['version','busName','plate','photo','start','end','seats'])
+        && s.keys().hasOnly(['version','busName','plate','photo','start','end','seats'])
+        && s.version == 1 && s.busName is string && s.busName.size() <= 40
+        && s.plate is string && s.plate.size() <= 30 && s.photo is string && s.photo.size() <= 600000
+        && s.start is int && s.end is int && s.seats is list && s.seats.size() == 45;
+    }
+    function validEntry(d) {
+      return d.keys().hasAll(['state','revision','updatedAt','updatedBy','note','historyId'])
+        && d.keys().hasOnly(['state','revision','updatedAt','updatedBy','note','historyId'])
+        && validState(d.state) && d.revision is int && d.revision > 0
+        && d.updatedAt == request.time && d.updatedBy == request.auth.uid
+        && d.note is string && d.note.size() <= 100
+        && d.historyId is string && d.historyId.matches('^[a-zA-Z0-9]{20}$');
+    }
+    match /busEditors/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list, write: if false;
+    }
+    match /trips/{trip}/classes/{classId} {
+      allow read: if signedIn();
+      function withHistory() {
+        let id = request.resource.data.historyId;
+        return !exists(/databases/$(database)/documents/trips/$(trip)/classes/$(classId)/history/$(id))
+          && getAfter(/databases/$(database)/documents/trips/$(trip)/classes/$(classId)/history/$(id)).data == request.resource.data;
+      }
+      allow create: if teacher() && validEntry(request.resource.data)
+        && request.resource.data.revision == 1 && withHistory();
+      allow update: if teacher() && validEntry(request.resource.data)
+        && request.resource.data.revision == resource.data.revision + 1 && withHistory();
+      allow delete: if false;
+      match /history/{historyId} {
+        allow read: if teacher();
+        allow create: if teacher() && validEntry(request.resource.data)
+          && request.resource.data.historyId == historyId
+          && getAfter(/databases/$(database)/documents/trips/$(trip)/classes/$(classId)).data == request.resource.data;
+        allow update, delete: if false;
+      }
+    }
+  }
+}
